@@ -38,7 +38,8 @@
       },
       "lifecycle": {
         "init": true,
-        "shutdown": true
+        "shutdown": true,
+        "shutdownBehavior": "graceful"
       }
     }
   },
