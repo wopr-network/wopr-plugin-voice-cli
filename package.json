@@ -47,6 +47,12 @@
       }
     }
   },
+  "pnpm": {
+    "overrides": {
+      "form-data": ">=2.5.4",
+      "marked": ">=4.0.10"
+    }
+  },
   "publishConfig": {
     "access": "public"
   },

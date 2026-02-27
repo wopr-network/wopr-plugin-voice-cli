@@ -5,8 +5,9 @@ import plugin from "../index.js";
 function makeCtx(overrides: Record<string, unknown> = {}) {
 	return {
 		log: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
-		getExtension: vi.fn(() => undefined),
-		getConfig: vi.fn(() => ({})),
+		getSTT: vi.fn(() => null),
+		getTTS: vi.fn(() => null),
+		hasVoice: vi.fn(() => ({ stt: false, tts: false })),
 		...overrides,
 	} as any;
 }
@@ -72,7 +73,7 @@ describe("voice list", () => {
 
 	it("lists voices when TTS available", async () => {
 		const ctx = makeCtx({
-			getExtension: vi.fn(() => ({
+			getTTS: vi.fn(() => ({
 				metadata: { name: "test-tts" },
 				voices: [
 					{ id: "v1", name: "Voice1", gender: "female", description: "Test" },
