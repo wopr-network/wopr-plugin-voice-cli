@@ -10,58 +10,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, extname } from "node:path";
-import type {
-	PluginCommand,
-	WOPRPlugin,
-	WOPRPluginContext,
-} from "@wopr-network/plugin-types";
-
-// Local shape definitions for voice extensions registered by STT/TTS plugins.
-// These mirror the extension objects registered via ctx.registerExtension("stt"|"tts").
-interface VoicePluginMetadata {
-	name: string;
-	version?: string;
-	description?: string;
-	emoji?: string;
-	local?: boolean;
-}
-
-interface Voice {
-	id: string;
-	name?: string;
-	gender?: string;
-	description?: string;
-}
-
-interface TranscribeResult {
-	text: string;
-	durationMs: number;
-	confidence?: number;
-}
-
-interface SynthesizeResult {
-	audio: Uint8Array;
-	format: string;
-	durationMs: number;
-	sampleRate: number;
-}
-
-interface STTExtension {
-	metadata: VoicePluginMetadata;
-	transcribe(
-		audio: Buffer,
-		options?: { format?: string },
-	): Promise<TranscribeResult>;
-}
-
-interface TTSExtension {
-	metadata: VoicePluginMetadata;
-	voices: Voice[];
-	synthesize(
-		text: string,
-		options?: { voice?: string },
-	): Promise<SynthesizeResult>;
-}
+import type { PluginCommand, WOPRPlugin, WOPRPluginContext } from "wopr";
 
 const commands: PluginCommand[] = [
 	{
@@ -159,7 +108,7 @@ async function transcribeCommand(
 		return;
 	}
 
-	const stt = ctx.getExtension<STTExtension>("stt");
+	const stt = ctx.getSTT();
 	if (!stt) {
 		ctx.log.error("No STT provider available. Install a voice plugin:");
 		ctx.log.info("  wopr plugin install wopr-plugin-voice-whisper-local");
@@ -189,7 +138,8 @@ async function transcribeCommand(
 		const format = formatMap[ext] || "wav";
 
 		// Transcribe
-		const result = await stt.transcribe(audioBuffer, { format });
+		// biome-ignore lint/suspicious/noExplicitAny: format type not exported from wopr types
+		const result = await stt.transcribe(audioBuffer, { format: format as any });
 
 		ctx.log.info(`\nTranscription (${result.durationMs}ms audio):`);
 		ctx.log.info("─".repeat(40));
@@ -235,7 +185,7 @@ async function synthesizeCommand(
 		return;
 	}
 
-	const tts = ctx.getExtension<TTSExtension>("tts");
+	const tts = ctx.getTTS();
 	if (!tts) {
 		ctx.log.error("No TTS provider available. Install a voice plugin:");
 		ctx.log.info("  wopr plugin install wopr-plugin-voice-openai-tts");
@@ -257,7 +207,7 @@ async function synthesizeCommand(
 
 		// Determine output filename
 		const outputFile = flags.output || `output_${voice}.pcm`;
-		writeFileSync(outputFile, Buffer.from(result.audio));
+		writeFileSync(outputFile, result.audio);
 		ctx.log.info(`Saved to: ${outputFile}`);
 
 		// Hint for playback
@@ -277,7 +227,7 @@ async function synthesizeCommand(
  * wopr voice list - List available TTS voices
  */
 async function listVoicesCommand(ctx: WOPRPluginContext): Promise<void> {
-	const tts = ctx.getExtension<TTSExtension>("tts");
+	const tts = ctx.getTTS();
 	if (!tts) {
 		ctx.log.error("No TTS provider available.");
 		return;
@@ -301,8 +251,9 @@ async function listVoicesCommand(ctx: WOPRPluginContext): Promise<void> {
  * wopr voice providers - Show registered voice providers
  */
 async function providersCommand(ctx: WOPRPluginContext): Promise<void> {
-	const stt = ctx.getExtension<STTExtension>("stt");
-	const tts = ctx.getExtension<TTSExtension>("tts");
+	const voice = ctx.hasVoice();
+	const stt = ctx.getSTT();
+	const tts = ctx.getTTS();
 
 	ctx.log.info("Voice Providers:");
 	ctx.log.info("─".repeat(50));
@@ -331,14 +282,14 @@ async function providersCommand(ctx: WOPRPluginContext): Promise<void> {
 	}
 
 	ctx.log.info("\n─".repeat(50));
-	ctx.log.info(`Status: STT ${stt ? "✓" : "✗"} | TTS ${tts ? "✓" : "✗"}`);
+	ctx.log.info(
+		`Status: STT ${voice.stt ? "✓" : "✗"} | TTS ${voice.tts ? "✓" : "✗"}`,
+	);
 }
 
 // =============================================================================
 // Plugin Export
 // =============================================================================
-
-let ctx: WOPRPluginContext | null = null;
 
 const plugin: WOPRPlugin = {
 	name: "voice-cli",
@@ -346,15 +297,10 @@ const plugin: WOPRPlugin = {
 	description: "CLI commands for voice transcription and synthesis",
 	commands,
 
-	async init(pluginCtx: WOPRPluginContext) {
-		ctx = pluginCtx;
+	async init(ctx: WOPRPluginContext) {
 		ctx.log.info(
 			"Voice CLI commands registered: wopr voice <transcribe|synthesize|list|providers>",
 		);
-	},
-
-	async shutdown() {
-		ctx = null;
 	},
 };
 
