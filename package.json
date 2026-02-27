@@ -10,13 +10,16 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "name": "@wopr-network/wopr-plugin-voice-cli",
+  "peerDependencies": {
+    "wopr": "*"
+  },
   "scripts": {
     "build": "tsc",
-    "check": "biome check . && tsc --noEmit",
+    "check": "biome check index.ts && tsc --noEmit",
     "dev": "tsc -w",
-    "format": "biome format --write .",
-    "lint": "biome check .",
-    "lint:fix": "biome check --fix .",
+    "format": "biome format --write index.ts",
+    "lint": "biome check index.ts",
+    "lint:fix": "biome check --fix index.ts",
     "prepublishOnly": "npm run build",
     "test": "vitest run"
   },
