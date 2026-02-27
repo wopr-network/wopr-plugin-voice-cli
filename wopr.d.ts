@@ -38,9 +38,8 @@ declare module "wopr" {
 
 	export interface WOPRPluginContext {
 		log: PluginLogger;
-		getSTT(): STTProvider | null;
-		getTTS(): TTSProvider | null;
-		hasVoice(): { stt: boolean; tts: boolean };
+		getExtension<T = unknown>(name: string): T | undefined;
+		hasCapability(capability: string): boolean;
 	}
 
 	export interface PluginCommand {
@@ -56,5 +55,6 @@ declare module "wopr" {
 		description: string;
 		commands?: PluginCommand[];
 		init?(ctx: WOPRPluginContext): Promise<void>;
+		shutdown?(): Promise<void>;
 	}
 }
