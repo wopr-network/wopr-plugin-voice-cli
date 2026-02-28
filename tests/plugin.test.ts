@@ -29,11 +29,8 @@ describe("voice-cli plugin lifecycle", () => {
 		);
 	});
 
-	it("shutdown is idempotent", async () => {
-		const ctx = makeCtx();
-		await plugin.init(ctx);
-		await plugin.shutdown?.();
-		await plugin.shutdown?.(); // second call must not throw
+	it("plugin has no shutdown method", () => {
+		expect(plugin.shutdown).toBeUndefined();
 	});
 });
 

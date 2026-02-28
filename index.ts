@@ -84,7 +84,13 @@ function isTTSProvider(value: unknown): value is TTSProvider {
 			(voice) =>
 				typeof voice === "object" &&
 				voice !== null &&
-				typeof (voice as { id?: unknown }).id === "string",
+				typeof (voice as { id?: unknown }).id === "string" &&
+				((voice as { name?: unknown }).name === undefined ||
+					typeof (voice as { name?: unknown }).name === "string") &&
+				((voice as { gender?: unknown }).gender === undefined ||
+					typeof (voice as { gender?: unknown }).gender === "string") &&
+				((voice as { description?: unknown }).description === undefined ||
+					typeof (voice as { description?: unknown }).description === "string"),
 		) &&
 		typeof (value as { synthesize?: unknown }).synthesize === "function"
 	);
