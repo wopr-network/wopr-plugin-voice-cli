@@ -13,7 +13,7 @@ import { basename, extname } from "node:path";
 import type {
 	PluginCommand,
 	WOPRPlugin,
-	WOPRPluginContext as BaseContext,
+	WOPRPluginContext,
 } from "@wopr-network/plugin-types";
 
 // Voice-specific types not yet in plugin-types
@@ -54,13 +54,6 @@ interface TTSProvider {
 	}>;
 }
 
-// Voice-specific context extension — getSTT/getTTS/hasVoice not yet in plugin-types
-interface WOPRPluginContext extends BaseContext {
-	getSTT(): STTProvider | null;
-	getTTS(): TTSProvider | null;
-	hasVoice(): { stt: boolean; tts: boolean };
-}
-
 const commands: PluginCommand[] = [
 	{
 		name: "voice",
@@ -81,8 +74,7 @@ Examples:
   wopr voice list
   wopr voice providers`,
 
-		async handler(baseCtx: BaseContext, args: string[]) {
-			const ctx = baseCtx as WOPRPluginContext;
+		async handler(ctx: WOPRPluginContext, args: string[]) {
 			const [subcommand, ...rest] = args;
 
 			switch (subcommand) {
@@ -158,7 +150,7 @@ async function transcribeCommand(
 		return;
 	}
 
-	const stt = ctx.getSTT();
+	const stt = ctx.getExtension<STTProvider>("stt");
 	if (!stt) {
 		ctx.log.error("No STT provider available. Install a voice plugin:");
 		ctx.log.info("  wopr plugin install wopr-plugin-voice-whisper-local");
@@ -235,7 +227,7 @@ async function synthesizeCommand(
 		return;
 	}
 
-	const tts = ctx.getTTS();
+	const tts = ctx.getExtension<TTSProvider>("tts");
 	if (!tts) {
 		ctx.log.error("No TTS provider available. Install a voice plugin:");
 		ctx.log.info("  wopr plugin install wopr-plugin-voice-openai-tts");
@@ -277,7 +269,7 @@ async function synthesizeCommand(
  * wopr voice list - List available TTS voices
  */
 async function listVoicesCommand(ctx: WOPRPluginContext): Promise<void> {
-	const tts = ctx.getTTS();
+	const tts = ctx.getExtension<TTSProvider>("tts");
 	if (!tts) {
 		ctx.log.error("No TTS provider available.");
 		return;
@@ -301,9 +293,8 @@ async function listVoicesCommand(ctx: WOPRPluginContext): Promise<void> {
  * wopr voice providers - Show registered voice providers
  */
 async function providersCommand(ctx: WOPRPluginContext): Promise<void> {
-	const voice = ctx.hasVoice();
-	const stt = ctx.getSTT();
-	const tts = ctx.getTTS();
+	const stt = ctx.getExtension<STTProvider>("stt");
+	const tts = ctx.getExtension<TTSProvider>("tts");
 
 	ctx.log.info("Voice Providers:");
 	ctx.log.info("─".repeat(50));
@@ -332,9 +323,7 @@ async function providersCommand(ctx: WOPRPluginContext): Promise<void> {
 	}
 
 	ctx.log.info("\n─".repeat(50));
-	ctx.log.info(
-		`Status: STT ${voice.stt ? "✓" : "✗"} | TTS ${voice.tts ? "✓" : "✗"}`,
-	);
+	ctx.log.info(`Status: STT ${stt ? "✓" : "✗"} | TTS ${tts ? "✓" : "✗"}`);
 }
 
 // =============================================================================
