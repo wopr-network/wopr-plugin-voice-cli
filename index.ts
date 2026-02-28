@@ -180,8 +180,7 @@ async function transcribeCommand(
 		const format = formatMap[ext] || "wav";
 
 		// Transcribe
-		// biome-ignore lint/suspicious/noExplicitAny: format type not exported from wopr types
-		const result = await stt.transcribe(audioBuffer, { format: format as any });
+		const result = await stt.transcribe(audioBuffer, { format });
 
 		ctx.log.info(`\nTranscription (${result.durationMs}ms audio):`);
 		ctx.log.info("─".repeat(40));
