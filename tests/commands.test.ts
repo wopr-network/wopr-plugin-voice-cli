@@ -72,11 +72,14 @@ describe("voice list", () => {
 
 	it("lists voices when TTS available", async () => {
 		const ttsProvider = {
-			metadata: { name: "test-tts" },
+			metadata: { name: "test-tts", version: "1.0.0" },
 			voices: [{ id: "v1", name: "Voice1", gender: "female", description: "Test" }],
+			synthesize: vi.fn(),
 		};
 		const ctx = makeCtx({
-			getCapabilityProviders: vi.fn(() => [ttsProvider]),
+			getCapabilityProviders: vi.fn((capability: string) =>
+				capability === "tts" ? [ttsProvider] : [],
+			),
 		});
 		await voiceCmd.handler(ctx, ["list"]);
 		expect(ctx.log.info).toHaveBeenCalledWith(expect.stringContaining("v1"));
