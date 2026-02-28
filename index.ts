@@ -150,9 +150,9 @@ async function transcribeCommand(
 		return;
 	}
 
-	const sttProviders = ctx.getCapabilityProviders("stt");
+	const sttProviders = ctx.getCapabilityProviders?.("stt");
 	const stt =
-		sttProviders.length > 0
+		sttProviders && sttProviders.length > 0
 			? (sttProviders[0] as unknown as STTProvider)
 			: null;
 	if (!stt) {
@@ -230,9 +230,9 @@ async function synthesizeCommand(
 		return;
 	}
 
-	const ttsProviders = ctx.getCapabilityProviders("tts");
+	const ttsProviders = ctx.getCapabilityProviders?.("tts");
 	const tts =
-		ttsProviders.length > 0
+		ttsProviders && ttsProviders.length > 0
 			? (ttsProviders[0] as unknown as TTSProvider)
 			: null;
 	if (!tts) {
@@ -276,9 +276,9 @@ async function synthesizeCommand(
  * wopr voice list - List available TTS voices
  */
 async function listVoicesCommand(ctx: WOPRPluginContext): Promise<void> {
-	const ttsProviders = ctx.getCapabilityProviders("tts");
+	const ttsProviders = ctx.getCapabilityProviders?.("tts");
 	const tts =
-		ttsProviders.length > 0
+		ttsProviders && ttsProviders.length > 0
 			? (ttsProviders[0] as unknown as TTSProvider)
 			: null;
 	if (!tts) {
@@ -304,14 +304,14 @@ async function listVoicesCommand(ctx: WOPRPluginContext): Promise<void> {
  * wopr voice providers - Show registered voice providers
  */
 async function providersCommand(ctx: WOPRPluginContext): Promise<void> {
-	const sttProviders = ctx.getCapabilityProviders("stt");
+	const sttProviders = ctx.getCapabilityProviders?.("stt");
 	const stt =
-		sttProviders.length > 0
+		sttProviders && sttProviders.length > 0
 			? (sttProviders[0] as unknown as STTProvider)
 			: null;
-	const ttsProviders = ctx.getCapabilityProviders("tts");
+	const ttsProviders = ctx.getCapabilityProviders?.("tts");
 	const tts =
-		ttsProviders.length > 0
+		ttsProviders && ttsProviders.length > 0
 			? (ttsProviders[0] as unknown as TTSProvider)
 			: null;
 
