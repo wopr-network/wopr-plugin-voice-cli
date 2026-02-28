@@ -10,7 +10,56 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, extname } from "node:path";
-import type { PluginCommand, WOPRPlugin, WOPRPluginContext } from "wopr";
+import type {
+	PluginCommand,
+	WOPRPlugin,
+	WOPRPluginContext as BaseContext,
+} from "@wopr-network/plugin-types";
+
+// Voice-specific types not yet in plugin-types
+interface VoiceMetadata {
+	name: string;
+	version: string;
+	description?: string;
+	emoji?: string;
+	local?: boolean;
+}
+
+interface TTSVoice {
+	id: string;
+	name?: string;
+	gender?: string;
+	description?: string;
+}
+
+interface STTProvider {
+	metadata: VoiceMetadata;
+	transcribe(
+		audio: Buffer,
+		options?: Record<string, unknown>,
+	): Promise<{ text: string; durationMs: number; confidence?: number }>;
+}
+
+interface TTSProvider {
+	metadata: VoiceMetadata;
+	voices: TTSVoice[];
+	synthesize(
+		text: string,
+		options?: Record<string, unknown>,
+	): Promise<{
+		audio: Buffer;
+		format: string;
+		sampleRate?: number;
+		durationMs: number;
+	}>;
+}
+
+// Voice-specific context extension — getSTT/getTTS/hasVoice not yet in plugin-types
+interface WOPRPluginContext extends BaseContext {
+	getSTT(): STTProvider | null;
+	getTTS(): TTSProvider | null;
+	hasVoice(): { stt: boolean; tts: boolean };
+}
 
 const commands: PluginCommand[] = [
 	{
@@ -32,7 +81,8 @@ Examples:
   wopr voice list
   wopr voice providers`,
 
-		async handler(ctx: WOPRPluginContext, args: string[]) {
+		async handler(baseCtx: BaseContext, args: string[]) {
+			const ctx = baseCtx as WOPRPluginContext;
 			const [subcommand, ...rest] = args;
 
 			switch (subcommand) {
