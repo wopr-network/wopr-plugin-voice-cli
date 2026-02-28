@@ -74,11 +74,18 @@ function isSTTProvider(value: unknown): value is STTProvider {
 }
 
 function isTTSProvider(value: unknown): value is TTSProvider {
+	if (typeof value !== "object" || value === null) return false;
+	const metadata = (value as { metadata?: unknown }).metadata;
+	const voices = (value as { voices?: unknown }).voices;
 	return (
-		typeof value === "object" &&
-		value !== null &&
-		isVoiceMetadata((value as { metadata?: unknown }).metadata) &&
-		Array.isArray((value as { voices?: unknown }).voices) &&
+		isVoiceMetadata(metadata) &&
+		Array.isArray(voices) &&
+		voices.every(
+			(voice) =>
+				typeof voice === "object" &&
+				voice !== null &&
+				typeof (voice as { id?: unknown }).id === "string",
+		) &&
 		typeof (value as { synthesize?: unknown }).synthesize === "function"
 	);
 }
