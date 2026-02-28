@@ -150,7 +150,11 @@ async function transcribeCommand(
 		return;
 	}
 
-	const stt = ctx.getExtension<STTProvider>("stt");
+	const sttProviders = ctx.getCapabilityProviders("stt");
+	const stt =
+		sttProviders.length > 0
+			? (sttProviders[0] as unknown as STTProvider)
+			: null;
 	if (!stt) {
 		ctx.log.error("No STT provider available. Install a voice plugin:");
 		ctx.log.info("  wopr plugin install wopr-plugin-voice-whisper-local");
@@ -226,7 +230,11 @@ async function synthesizeCommand(
 		return;
 	}
 
-	const tts = ctx.getExtension<TTSProvider>("tts");
+	const ttsProviders = ctx.getCapabilityProviders("tts");
+	const tts =
+		ttsProviders.length > 0
+			? (ttsProviders[0] as unknown as TTSProvider)
+			: null;
 	if (!tts) {
 		ctx.log.error("No TTS provider available. Install a voice plugin:");
 		ctx.log.info("  wopr plugin install wopr-plugin-voice-openai-tts");
@@ -268,7 +276,11 @@ async function synthesizeCommand(
  * wopr voice list - List available TTS voices
  */
 async function listVoicesCommand(ctx: WOPRPluginContext): Promise<void> {
-	const tts = ctx.getExtension<TTSProvider>("tts");
+	const ttsProviders = ctx.getCapabilityProviders("tts");
+	const tts =
+		ttsProviders.length > 0
+			? (ttsProviders[0] as unknown as TTSProvider)
+			: null;
 	if (!tts) {
 		ctx.log.error("No TTS provider available.");
 		return;
@@ -292,8 +304,16 @@ async function listVoicesCommand(ctx: WOPRPluginContext): Promise<void> {
  * wopr voice providers - Show registered voice providers
  */
 async function providersCommand(ctx: WOPRPluginContext): Promise<void> {
-	const stt = ctx.getExtension<STTProvider>("stt");
-	const tts = ctx.getExtension<TTSProvider>("tts");
+	const sttProviders = ctx.getCapabilityProviders("stt");
+	const stt =
+		sttProviders.length > 0
+			? (sttProviders[0] as unknown as STTProvider)
+			: null;
+	const ttsProviders = ctx.getCapabilityProviders("tts");
+	const tts =
+		ttsProviders.length > 0
+			? (ttsProviders[0] as unknown as TTSProvider)
+			: null;
 
 	ctx.log.info("Voice Providers:");
 	ctx.log.info("─".repeat(50));

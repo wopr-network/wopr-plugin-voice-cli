@@ -5,7 +5,7 @@ import plugin from "../index.js";
 function makeCtx(overrides: Record<string, unknown> = {}) {
 	return {
 		log: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
-		getExtension: vi.fn(() => undefined),
+		getCapabilityProviders: vi.fn(() => []),
 		getConfig: vi.fn(() => ({})),
 		...overrides,
 	} as any;
@@ -71,13 +71,12 @@ describe("voice list", () => {
 	});
 
 	it("lists voices when TTS available", async () => {
+		const ttsProvider = {
+			metadata: { name: "test-tts" },
+			voices: [{ id: "v1", name: "Voice1", gender: "female", description: "Test" }],
+		};
 		const ctx = makeCtx({
-			getExtension: vi.fn(() => ({
-				metadata: { name: "test-tts" },
-				voices: [
-					{ id: "v1", name: "Voice1", gender: "female", description: "Test" },
-				],
-			})),
+			getCapabilityProviders: vi.fn(() => [ttsProvider]),
 		});
 		await voiceCmd.handler(ctx, ["list"]);
 		expect(ctx.log.info).toHaveBeenCalledWith(expect.stringContaining("v1"));

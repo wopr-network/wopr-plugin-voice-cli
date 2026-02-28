@@ -5,7 +5,7 @@ import plugin from "../index.js";
 function makeCtx(overrides: Record<string, unknown> = {}) {
 	return {
 		log: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
-		getExtension: vi.fn(() => undefined),
+		getCapabilityProviders: vi.fn(() => []),
 		getConfig: vi.fn(() => ({})),
 		...overrides,
 	} as any;
