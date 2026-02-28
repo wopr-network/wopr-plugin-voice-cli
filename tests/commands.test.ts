@@ -84,6 +84,23 @@ describe("voice list", () => {
 		await voiceCmd.handler(ctx, ["list"]);
 		expect(ctx.log.info).toHaveBeenCalledWith(expect.stringContaining("v1"));
 	});
+
+	it("handles provider with malformed voice entries without throwing", async () => {
+		const malformedProvider = {
+			metadata: { name: "test-tts", version: "1.0.0" },
+			voices: [{}, { id: "v1", name: "Voice1" }],
+			synthesize: vi.fn(),
+		};
+		const ctx = makeCtx({
+			getCapabilityProviders: vi.fn((capability: string) =>
+				capability === "tts" ? [malformedProvider] : [],
+			),
+		});
+		await expect(voiceCmd.handler(ctx, ["list"])).resolves.toBeUndefined();
+		// Provider is rejected by isTTSProvider (malformed voice lacks id string)
+		// so command reports gracefully rather than throwing
+		expect(ctx.log.error).toHaveBeenCalledWith("No TTS provider available.");
+	});
 });
 
 describe("voice providers", () => {
