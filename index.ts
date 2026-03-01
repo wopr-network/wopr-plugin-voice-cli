@@ -10,7 +10,102 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, extname } from "node:path";
-import type { PluginCommand, WOPRPlugin, WOPRPluginContext } from "wopr";
+import type {
+	PluginCommand,
+	WOPRPlugin,
+	WOPRPluginContext,
+} from "@wopr-network/plugin-types";
+
+// Voice-specific types not yet in plugin-types
+interface VoiceMetadata {
+	name: string;
+	version: string;
+	description?: string;
+	emoji?: string;
+	local?: boolean;
+}
+
+interface TTSVoice {
+	id: string;
+	name?: string;
+	gender?: string;
+	description?: string;
+}
+
+interface STTProvider {
+	metadata: VoiceMetadata;
+	transcribe(
+		audio: Buffer,
+		options?: Record<string, unknown>,
+	): Promise<{ text: string; durationMs: number; confidence?: number }>;
+}
+
+interface TTSProvider {
+	metadata: VoiceMetadata;
+	voices: TTSVoice[];
+	synthesize(
+		text: string,
+		options?: Record<string, unknown>,
+	): Promise<{
+		audio: Buffer;
+		format: string;
+		sampleRate?: number;
+		durationMs: number;
+	}>;
+}
+
+// Runtime type guards — validate capability providers before use
+function isVoiceMetadata(value: unknown): value is VoiceMetadata {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		typeof (value as { name?: unknown }).name === "string" &&
+		typeof (value as { version?: unknown }).version === "string"
+	);
+}
+
+function isSTTProvider(value: unknown): value is STTProvider {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		isVoiceMetadata((value as { metadata?: unknown }).metadata) &&
+		typeof (value as { transcribe?: unknown }).transcribe === "function"
+	);
+}
+
+function isTTSProvider(value: unknown): value is TTSProvider {
+	if (typeof value !== "object" || value === null) return false;
+	const metadata = (value as { metadata?: unknown }).metadata;
+	const voices = (value as { voices?: unknown }).voices;
+	return (
+		isVoiceMetadata(metadata) &&
+		Array.isArray(voices) &&
+		voices.every(
+			(voice) =>
+				typeof voice === "object" &&
+				voice !== null &&
+				typeof (voice as { id?: unknown }).id === "string" &&
+				((voice as { name?: unknown }).name === undefined ||
+					typeof (voice as { name?: unknown }).name === "string") &&
+				((voice as { gender?: unknown }).gender === undefined ||
+					typeof (voice as { gender?: unknown }).gender === "string") &&
+				((voice as { description?: unknown }).description === undefined ||
+					typeof (voice as { description?: unknown }).description === "string"),
+		) &&
+		typeof (value as { synthesize?: unknown }).synthesize === "function"
+	);
+}
+
+function firstProvider<T>(
+	providers: unknown[] | undefined,
+	guard: (v: unknown) => v is T,
+): T | null {
+	if (!providers) return null;
+	for (const p of providers) {
+		if (guard(p)) return p;
+	}
+	return null;
+}
 
 const commands: PluginCommand[] = [
 	{
@@ -108,7 +203,7 @@ async function transcribeCommand(
 		return;
 	}
 
-	const stt = ctx.getSTT();
+	const stt = firstProvider(ctx.getCapabilityProviders?.("stt"), isSTTProvider);
 	if (!stt) {
 		ctx.log.error("No STT provider available. Install a voice plugin:");
 		ctx.log.info("  wopr plugin install wopr-plugin-voice-whisper-local");
@@ -138,8 +233,7 @@ async function transcribeCommand(
 		const format = formatMap[ext] || "wav";
 
 		// Transcribe
-		// biome-ignore lint/suspicious/noExplicitAny: format type not exported from wopr types
-		const result = await stt.transcribe(audioBuffer, { format: format as any });
+		const result = await stt.transcribe(audioBuffer, { format });
 
 		ctx.log.info(`\nTranscription (${result.durationMs}ms audio):`);
 		ctx.log.info("─".repeat(40));
@@ -185,7 +279,7 @@ async function synthesizeCommand(
 		return;
 	}
 
-	const tts = ctx.getTTS();
+	const tts = firstProvider(ctx.getCapabilityProviders?.("tts"), isTTSProvider);
 	if (!tts) {
 		ctx.log.error("No TTS provider available. Install a voice plugin:");
 		ctx.log.info("  wopr plugin install wopr-plugin-voice-openai-tts");
@@ -227,7 +321,7 @@ async function synthesizeCommand(
  * wopr voice list - List available TTS voices
  */
 async function listVoicesCommand(ctx: WOPRPluginContext): Promise<void> {
-	const tts = ctx.getTTS();
+	const tts = firstProvider(ctx.getCapabilityProviders?.("tts"), isTTSProvider);
 	if (!tts) {
 		ctx.log.error("No TTS provider available.");
 		return;
@@ -251,9 +345,8 @@ async function listVoicesCommand(ctx: WOPRPluginContext): Promise<void> {
  * wopr voice providers - Show registered voice providers
  */
 async function providersCommand(ctx: WOPRPluginContext): Promise<void> {
-	const voice = ctx.hasVoice();
-	const stt = ctx.getSTT();
-	const tts = ctx.getTTS();
+	const stt = firstProvider(ctx.getCapabilityProviders?.("stt"), isSTTProvider);
+	const tts = firstProvider(ctx.getCapabilityProviders?.("tts"), isTTSProvider);
 
 	ctx.log.info("Voice Providers:");
 	ctx.log.info("─".repeat(50));
@@ -282,9 +375,7 @@ async function providersCommand(ctx: WOPRPluginContext): Promise<void> {
 	}
 
 	ctx.log.info("\n─".repeat(50));
-	ctx.log.info(
-		`Status: STT ${voice.stt ? "✓" : "✗"} | TTS ${voice.tts ? "✓" : "✗"}`,
-	);
+	ctx.log.info(`Status: STT ${stt ? "✓" : "✗"} | TTS ${tts ? "✓" : "✗"}`);
 }
 
 // =============================================================================

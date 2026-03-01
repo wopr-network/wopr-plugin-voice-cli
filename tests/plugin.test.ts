@@ -5,7 +5,7 @@ import plugin from "../index.js";
 function makeCtx(overrides: Record<string, unknown> = {}) {
 	return {
 		log: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
-		getExtension: vi.fn(() => undefined),
+		getCapabilityProviders: vi.fn(() => []),
 		getConfig: vi.fn(() => ({})),
 		...overrides,
 	} as any;
@@ -29,11 +29,8 @@ describe("voice-cli plugin lifecycle", () => {
 		);
 	});
 
-	it("shutdown is idempotent", async () => {
-		const ctx = makeCtx();
-		await plugin.init(ctx);
-		await plugin.shutdown?.();
-		await plugin.shutdown?.(); // second call must not throw
+	it("plugin has no shutdown method", () => {
+		expect(plugin.shutdown).toBeUndefined();
 	});
 });
 

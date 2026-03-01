@@ -1,18 +1,17 @@
 {
   "description": "CLI commands for WOPR voice operations",
+  "dependencies": {
+    "@wopr-network/plugin-types": "^0.7.1"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.4.4",
     "@types/node": "^25.3.2",
-    "@wopr-network/plugin-types": "^0.7.1",
     "typescript": "^5.3.0",
     "vitest": "^4.0.18"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "name": "@wopr-network/wopr-plugin-voice-cli",
-  "peerDependencies": {
-    "wopr": "*"
-  },
   "scripts": {
     "build": "tsc",
     "check": "biome check index.ts && tsc --noEmit",
@@ -42,8 +41,7 @@
       },
       "lifecycle": {
         "init": true,
-        "shutdown": true,
-        "shutdownBehavior": "graceful"
+        "shutdown": false
       }
     }
   },

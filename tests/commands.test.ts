@@ -5,7 +5,7 @@ import plugin from "../index.js";
 function makeCtx(overrides: Record<string, unknown> = {}) {
 	return {
 		log: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
-		getExtension: vi.fn(() => undefined),
+		getCapabilityProviders: vi.fn(() => []),
 		getConfig: vi.fn(() => ({})),
 		...overrides,
 	} as any;
@@ -71,16 +71,35 @@ describe("voice list", () => {
 	});
 
 	it("lists voices when TTS available", async () => {
+		const ttsProvider = {
+			metadata: { name: "test-tts", version: "1.0.0" },
+			voices: [{ id: "v1", name: "Voice1", gender: "female", description: "Test" }],
+			synthesize: vi.fn(),
+		};
 		const ctx = makeCtx({
-			getExtension: vi.fn(() => ({
-				metadata: { name: "test-tts" },
-				voices: [
-					{ id: "v1", name: "Voice1", gender: "female", description: "Test" },
-				],
-			})),
+			getCapabilityProviders: vi.fn((capability: string) =>
+				capability === "tts" ? [ttsProvider] : [],
+			),
 		});
 		await voiceCmd.handler(ctx, ["list"]);
 		expect(ctx.log.info).toHaveBeenCalledWith(expect.stringContaining("v1"));
+	});
+
+	it("handles provider with malformed voice entries without throwing", async () => {
+		const malformedProvider = {
+			metadata: { name: "test-tts", version: "1.0.0" },
+			voices: [{}, { id: "v1", name: "Voice1" }],
+			synthesize: vi.fn(),
+		};
+		const ctx = makeCtx({
+			getCapabilityProviders: vi.fn((capability: string) =>
+				capability === "tts" ? [malformedProvider] : [],
+			),
+		});
+		await expect(voiceCmd.handler(ctx, ["list"])).resolves.toBeUndefined();
+		// Provider is rejected by isTTSProvider (malformed voice lacks id string)
+		// so command reports gracefully rather than throwing
+		expect(ctx.log.error).toHaveBeenCalledWith("No TTS provider available.");
 	});
 });
 
