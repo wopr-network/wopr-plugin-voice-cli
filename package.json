@@ -30,14 +30,22 @@
       "description": "Voice CLI commands (transcribe, synthesize, list, providers)",
       "name": "voice-cli",
       "type": "cli",
-      "tags": ["voice", "cli", "tts", "stt", "transcription"],
+      "tags": [
+        "voice",
+        "cli",
+        "tts",
+        "stt",
+        "transcription"
+      ],
       "icon": "terminal",
       "requires": {
         "capabilities": []
       },
       "provides": {
         "capabilities": [],
-        "commands": ["voice"]
+        "commands": [
+          "voice"
+        ]
       },
       "lifecycle": {
         "init": true,
@@ -53,5 +61,6 @@
   ],
   "release": {
     "extends": "@wopr-network/semantic-release-config"
-  }
+  },
+  "packageManager": "pnpm@10.30.3"
 }
