@@ -73,7 +73,9 @@ describe("voice list", () => {
 	it("lists voices when TTS available", async () => {
 		const ttsProvider = {
 			metadata: { name: "test-tts", version: "1.0.0" },
-			voices: [{ id: "v1", name: "Voice1", gender: "female", description: "Test" }],
+			voices: [
+				{ id: "v1", name: "Voice1", gender: "female", description: "Test" },
+			],
 			synthesize: vi.fn(),
 		};
 		const ctx = makeCtx({
